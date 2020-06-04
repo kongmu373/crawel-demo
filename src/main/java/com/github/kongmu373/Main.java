@@ -27,8 +27,9 @@ public class Main {
         List<String> links = new LinkedList<>();
         Set<String> visitedLinks = new HashSet<>();
 
-        String firstList = "https://sina.cn";
-        parsePage(firstList, links, visitedLinks);
+        String firstLink = "https://sina.cn";
+        links.add(firstLink);
+
         while (!links.isEmpty()) {
             String link = links.remove(0);
             if (link.startsWith("//")) {
@@ -37,22 +38,21 @@ public class Main {
             if (StringUtils.isEmpty(link) || visitedLinks.contains(link) || !isValidLink(link)) {
                 continue;
             }
-            parsePage(link, links, visitedLinks);
+            Document document = parsePage(link, visitedLinks);
+            storeIntoDatabaseIfItIsNewsPage(link, document);
+            getLinksByParsePage(links, document);
         }
 
     }
 
-    private static void parsePage(String link, List<String> links, Set<String> visitedLinks) {
+    private static Document parsePage(String link, Set<String> visitedLinks) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36");
         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
             HttpEntity entity = response.getEntity();
             String html = EntityUtils.toString(entity);
-            Document document = Jsoup.parse(html);
-
-            getLinksByParsePage(links, document);
-            storeIntoDatabaseIfItIsNewsPage(link, document);
+            return Jsoup.parse(html);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
