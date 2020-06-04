@@ -19,8 +19,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,20 +26,8 @@ public class Main {
 
     public static void main(String[] args) throws SQLException {
         Connection connection = DriverManager.getConnection("jdbc:h2:file:C:\\Users\\48011\\Desktop\\temp\\crawel-demo\\news");
-
-        List<String> links = getLinksByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED;");
-        while (true) {
-            if (links.isEmpty()) {
-                links = getLinksByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED;");
-            }
-            if (links.isEmpty()) {
-                break;
-            }
-            String link = links.remove(0);
-            updateLinksByDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
-            if (StringUtils.isEmpty(link)) {
-                continue;
-            }
+        String link;
+        while ((link = getLinkAndDeleteLink(connection)) != null) {
             if (link.startsWith("//")) {
                 link = "https:" + link;
             }
@@ -54,6 +40,15 @@ public class Main {
             getLinksByParsePage(connection, document);
         }
 
+    }
+
+    private static String getLinkAndDeleteLink(Connection connection) throws SQLException {
+        String link = getLinkByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED limit 1;");
+        if (!StringUtils.isEmpty(link)) {
+
+            updateLinksByDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
+        }
+        return link;
     }
 
     private static boolean isVisitedLinkSearchFromDatabase(Connection connection, String link) throws SQLException {
@@ -77,15 +72,14 @@ public class Main {
         }
     }
 
-    private static List<String> getLinksByDatabase(Connection connection, String sql) throws SQLException {
-        List<String> links = new LinkedList<>();
+    private static String getLinkByDatabase(Connection connection, String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                links.add(resultSet.getString(1));
+            if (resultSet.next()) {
+                return resultSet.getString(1);
             }
         }
-        return links;
+        return null;
     }
 
     private static Document parsePage(String link, Connection connection) throws SQLException {
