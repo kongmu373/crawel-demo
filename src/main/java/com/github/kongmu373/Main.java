@@ -9,43 +9,85 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashSet;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:C:\\Users\\48011\\Desktop\\temp\\crawel-demo\\news");
 
-        List<String> links = new LinkedList<>();
-        Set<String> visitedLinks = new HashSet<>();
-
-        String firstLink = "https://sina.cn";
-        links.add(firstLink);
-
-        while (!links.isEmpty()) {
+        List<String> links = getLinksByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED;");
+        while (true) {
+            if (links.isEmpty()) {
+                links = getLinksByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED;");
+            }
+            if (links.isEmpty()) {
+                break;
+            }
             String link = links.remove(0);
+            updateLinksByDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
+            if (StringUtils.isEmpty(link)) {
+                continue;
+            }
             if (link.startsWith("//")) {
                 link = "https:" + link;
             }
-            if (StringUtils.isEmpty(link) || visitedLinks.contains(link) || !isValidLink(link)) {
+            if (isVisitedLinkSearchFromDatabase(connection, link) || !isValidLink(link)) {
                 continue;
             }
-            Document document = parsePage(link, visitedLinks);
+            Document document = parsePage(link, connection);
             storeIntoDatabaseIfItIsNewsPage(link, document);
-            getLinksByParsePage(links, document);
+            getLinksByParsePage(connection, document);
         }
 
     }
 
-    private static Document parsePage(String link, Set<String> visitedLinks) {
+    private static boolean isVisitedLinkSearchFromDatabase(Connection connection, String link) throws SQLException {
+        String sql = "select count(*) from LINKS_ALREADY_PROCESSED where link = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, link);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    final int i = resultSet.getInt(1);
+                    return i > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void updateLinksByDatabase(Connection connection, String sql, String link) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, link);
+            statement.executeUpdate();
+        }
+    }
+
+    private static List<String> getLinksByDatabase(Connection connection, String sql) throws SQLException {
+        List<String> links = new LinkedList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                links.add(resultSet.getString(1));
+            }
+        }
+        return links;
+    }
+
+    private static Document parsePage(String link, Connection connection) throws SQLException {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36");
@@ -56,7 +98,7 @@ public class Main {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
-            visitedLinks.add(link);
+            updateLinksByDatabase(connection, "insert into LINKS_ALREADY_PROCESSED VALUES ( ? );", link);
         }
     }
 
@@ -70,8 +112,11 @@ public class Main {
         }
     }
 
-    private static void getLinksByParsePage(List<String> links, Document document) {
-        document.select("a").stream().map(item -> item.attr("href")).forEach(links::add);
+    private static void getLinksByParsePage(Connection con, Document document) throws SQLException {
+        for (Element item : document.select("a")) {
+            String href = item.attr("href");
+            updateLinksByDatabase(con, "insert into LINKS_TO_BE_PROCESSED VALUES ( ? );", href);
+        }
     }
 
     private static boolean isValidLink(String link) {
