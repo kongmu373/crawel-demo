@@ -29,6 +29,7 @@ public class Main {
 
         String firstLink = "https://sina.cn";
         links.add(firstLink);
+
         while (!links.isEmpty()) {
             String link = links.remove(0);
             if (link.startsWith("//")) {
