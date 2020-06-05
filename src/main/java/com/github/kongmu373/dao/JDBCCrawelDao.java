@@ -44,14 +44,14 @@ public class JDBCCrawelDao implements CrawelDao {
         return false;
     }
 
-    public void updateLinksByDatabase(String sql, String link) throws SQLException {
+    private void updateLinksByDatabase(String sql, String link) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, link);
             statement.executeUpdate();
         }
     }
 
-    public String getLinkByDatabase(String sql) throws SQLException {
+    private String getLinkByDatabase(String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             if (resultSet.next()) {
@@ -67,6 +67,24 @@ public class JDBCCrawelDao implements CrawelDao {
             preparedStatement.setString(2, content);
             preparedStatement.setString(3, link);
             preparedStatement.executeUpdate();
+        }
+    }
+
+    @Override
+    public void insertLinkToProcessed(String link) {
+        try {
+            updateLinksByDatabase("insert into LINKS_ALREADY_PROCESSED (link) values (?)", link);
+        } catch (SQLException throwables) {
+            throw new RuntimeException(throwables);
+        }
+    }
+
+    @Override
+    public void insertLinkToBeProcessed(String href) {
+        try {
+            updateLinksByDatabase("insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
+        } catch (SQLException throwables) {
+            throw new RuntimeException(throwables);
         }
     }
 }

@@ -24,7 +24,11 @@ import java.util.stream.Collectors;
 
 public class Crawel {
 
-    private CrawelDao dao = new JDBCCrawelDao();
+    private CrawelDao dao;
+
+    public Crawel(CrawelDao dao) {
+        this.dao = dao;
+    }
 
     @SuppressWarnings("DMI_CONSTANT_DB_PASSWORD")
     public void run() throws SQLException {
@@ -40,8 +44,7 @@ public class Crawel {
 
     }
 
-
-    private Document parsePage(String link) throws SQLException {
+    private Document parsePage(String link) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36");
@@ -53,7 +56,7 @@ public class Crawel {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
-            dao.updateLinksByDatabase("insert into LINKS_ALREADY_PROCESSED VALUES ( ? );", link);
+            dao.insertLinkToProcessed(link);
         }
     }
 
@@ -63,6 +66,7 @@ public class Crawel {
             if (articleTags.isEmpty()) {
                 return;
             }
+            System.out.println(link);
             String title = articleTags.first().child(0).text();
             String content = articleTags.first().select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
 
@@ -70,7 +74,7 @@ public class Crawel {
         }
     }
 
-    private void getLinksByParsePage(Document document) throws SQLException {
+    private void getLinksByParsePage(Document document) {
         for (Element item : document.select("a")) {
             String href = item.attr("href");
             if (StringUtils.isBlank(href) || href.toLowerCase().startsWith("javascript") || !isValidLink(href)) {
@@ -79,7 +83,7 @@ public class Crawel {
             if (href.startsWith("//")) {
                 href = "https:" + href;
             }
-            dao.updateLinksByDatabase("insert into LINKS_TO_BE_PROCESSED VALUES ( ? );", href);
+            dao.insertLinkToBeProcessed(href);
         }
     }
 
@@ -99,6 +103,6 @@ public class Crawel {
     }
 
     public static void main(String[] args) throws SQLException {
-        new Crawel().run();
+        new Crawel(new JDBCCrawelDao()).run();
     }
 }

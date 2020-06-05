@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.kongmu373.MyMapper">
+    <select id="selectTobeProcessedLink" resultType="java.lang.String">
+        select LINK
+        from LINKS_TO_BE_PROCESSED
+        limit 1;
+    </select>
+    <delete id="deleteLinkInTobeProcessed" parameterType="String">
+        delete
+        from LINKS_TO_BE_PROCESSED
+        where LINK = #{link}
+    </delete>
+    <select id="countAlreadyProcessedLink" resultType="int">
+        select count(1)
+        from LINKS_ALREADY_PROCESSED
+        where LINK = #{link};
+    </select>
+
+    <insert
+            id="insertNew"
+            parameterType="com.github.kongmu373.pojo.New">
+        insert into NEWS (TITLE, CONTENT, URL, CREATED_AT, MODIFIED_AT)
+        values (#{title}, #{content}, #{url}, NOW(), NOW())
+    </insert>
+
+    <insert id="insertLink" parameterType="HashMap">
+        insert into ${tablename}
+        values (#{link})
+    </insert>
+</mapper>
