@@ -44,6 +44,12 @@
             <artifactId>com.suppresswarnings.things</artifactId>
             <version>1.0.13</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.mybatis/mybatis -->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.2</version>
+        </dependency>
 
     </dependencies>
 

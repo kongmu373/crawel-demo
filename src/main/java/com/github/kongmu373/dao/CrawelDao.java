@@ -7,10 +7,9 @@ public interface CrawelDao {
 
     boolean isVisitedLinkSearchFromDatabase(String link) throws SQLException;
 
-    void updateLinksByDatabase(String sql, String link) throws SQLException;
-
-    String getLinkByDatabase(String sql) throws SQLException;
-
     void insertNewsIntoDatabase(String link, String title, String content) throws SQLException;
 
+    void insertLinkToProcessed(String link);
+
+    void insertLinkToBeProcessed(String href);
 }
