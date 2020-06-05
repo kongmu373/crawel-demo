@@ -44,7 +44,6 @@ public class Crawel {
 
     }
 
-
     private Document parsePage(String link) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
