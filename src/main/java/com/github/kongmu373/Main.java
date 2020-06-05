@@ -1,5 +1,6 @@
 package com.github.kongmu373;
 
+import com.suppresswarnings.things.SuppressWarnings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -21,22 +22,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Main {
 
+    @SuppressWarnings("DMI_CONSTANT_DB_PASSWORD")
     public static void main(String[] args) throws SQLException {
-        Connection connection = DriverManager.getConnection("jdbc:h2:file:C:\\Users\\48011\\Desktop\\temp\\crawel-demo\\news");
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:C:\\Users\\48011\\Desktop\\temp\\crawel-demo\\news", "root", "root");
         String link;
         while ((link = getLinkAndDeleteLink(connection)) != null) {
-            if (link.startsWith("//")) {
-                link = "https:" + link;
-            }
-            if (isVisitedLinkSearchFromDatabase(connection, link) || !isValidLink(link)) {
+            if (isVisitedLinkSearchFromDatabase(connection, link)) {
                 continue;
             }
-
             Document document = parsePage(link, connection);
-            storeIntoDatabaseIfItIsNewsPage(link, document);
+            storeIntoDatabaseIfItIsNewsPage(connection, link, document);
             getLinksByParsePage(connection, document);
         }
 
@@ -44,8 +43,7 @@ public class Main {
 
     private static String getLinkAndDeleteLink(Connection connection) throws SQLException {
         String link = getLinkByDatabase(connection, "select link from LINKS_TO_BE_PROCESSED limit 1;");
-        if (!StringUtils.isEmpty(link)) {
-
+        if (link != null) {
             updateLinksByDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
         }
         return link;
@@ -98,19 +96,37 @@ public class Main {
         }
     }
 
-    private static void storeIntoDatabaseIfItIsNewsPage(String link, Document document) {
+    private static void storeIntoDatabaseIfItIsNewsPage(Connection connection, String link, Document document) throws SQLException {
         if (linkContainValidDate(link)) {
             Elements articleTags = document.select("article");
             if (articleTags.isEmpty()) {
                 return;
             }
-            System.out.println(articleTags.first().child(0).text());
+            String title = articleTags.first().child(0).text();
+            String content = articleTags.first().select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
+
+            insertNewsIntoDatabase(connection, link, title, content);
+        }
+    }
+
+    private static void insertNewsIntoDatabase(Connection connection, String link, String title, String content) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("insert into NEWS (TITLE, CONTENT, URL, CREATED_AT, MODIFIED_AT) values ( ?, ?, ?, NOW(), NOW())")) {
+            preparedStatement.setString(1, title);
+            preparedStatement.setString(2, content);
+            preparedStatement.setString(3, link);
+            preparedStatement.executeUpdate();
         }
     }
 
     private static void getLinksByParsePage(Connection con, Document document) throws SQLException {
         for (Element item : document.select("a")) {
             String href = item.attr("href");
+            if (StringUtils.isBlank(href) || href.toLowerCase().startsWith("javascript") || !isValidLink(href)) {
+                continue;
+            }
+            if (href.startsWith("//")) {
+                href = "https:" + href;
+            }
             updateLinksByDatabase(con, "insert into LINKS_TO_BE_PROCESSED VALUES ( ? );", href);
         }
     }
