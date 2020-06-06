@@ -8,11 +8,9 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-
 import static com.github.kongmu373.CopyDataToES.getNewsFromMySQL;
 import static com.github.kongmu373.CopyDataToES.writeDataToESFromMySQL;
 
@@ -36,7 +34,6 @@ public class MockElasticsearchDataGenerator {
         try (RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")))) {
             for (int i = 0; i < 400; i++) {
                 BulkResponse bulkResponse = writeDataToESFromMySQL(newsFromMySQL, client);
-
                 System.out.println("Current thread: " + Thread.currentThread().getName() + " finishes " + i + ": " + bulkResponse.status().getStatus());
             }
         } catch (IOException e) {
