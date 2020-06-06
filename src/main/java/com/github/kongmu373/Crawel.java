@@ -1,8 +1,6 @@
 package com.github.kongmu373;
 
 import com.github.kongmu373.dao.CrawelDao;
-import com.github.kongmu373.dao.JDBCCrawelDao;
-import com.suppresswarnings.things.SuppressWarnings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -22,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class Crawel {
+public class Crawel extends Thread {
 
     private CrawelDao dao;
 
@@ -30,16 +28,20 @@ public class Crawel {
         this.dao = dao;
     }
 
-    @SuppressWarnings("DMI_CONSTANT_DB_PASSWORD")
-    public void run() throws SQLException {
-        String link;
-        while ((link = dao.getLinkAndDeleteLink()) != null) {
-            if (dao.isVisitedLinkSearchFromDatabase(link)) {
-                continue;
+    @Override
+    public void run() {
+        try {
+            String link;
+            while ((link = dao.getLinkAndDeleteLink()) != null) {
+                if (dao.isVisitedLinkSearchFromDatabase(link) || isNotValidLink(link)) {
+                    continue;
+                }
+                Document document = parsePage(link);
+                storeIntoDatabaseIfItIsNewsPage(link, document);
+                getLinksByParsePage(document);
             }
-            Document document = parsePage(link);
-            storeIntoDatabaseIfItIsNewsPage(link, document);
-            getLinksByParsePage(document);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -77,7 +79,7 @@ public class Crawel {
     private void getLinksByParsePage(Document document) {
         for (Element item : document.select("a")) {
             String href = item.attr("href");
-            if (StringUtils.isBlank(href) || href.toLowerCase().startsWith("javascript") || !isValidLink(href)) {
+            if (StringUtils.isBlank(href) || href.toLowerCase().startsWith("javascript") || isNotValidLink(href)) {
                 continue;
             }
             if (href.startsWith("//")) {
@@ -87,12 +89,12 @@ public class Crawel {
         }
     }
 
-    private boolean isValidLink(String link) {
-        return isSinaPage(link);
+    private boolean isNotValidLink(String link) {
+        return !isSinaPage(link);
     }
 
     private boolean isSinaPage(String link) {
-        return link.contains("sina.cn") || link.contains("sina.com");
+        return link.contains("sina.cn");
     }
 
     private boolean linkContainValidDate(String link) {
@@ -100,9 +102,5 @@ public class Crawel {
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(link);
         return m.find();
-    }
-
-    public static void main(String[] args) throws SQLException {
-        new Crawel(new JDBCCrawelDao()).run();
     }
 }

@@ -15,19 +15,22 @@ public class MybatisCrawelDao implements CrawelDao {
     SqlSessionFactory sqlSessionFactory;
 
     public MybatisCrawelDao() {
+        this("development");
+    }
+
+    public MybatisCrawelDao(String env) {
         String resource = "db/mybatis/mybatis-config.xml";
         try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
-            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream, env);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public String getLinkAndDeleteLink() {
+    public synchronized String getLinkAndDeleteLink() {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             String link = session.selectOne("selectTobeProcessedLink");
-
             if (link != null) {
                 session.delete("deleteLinkInTobeProcessed", link);
             }

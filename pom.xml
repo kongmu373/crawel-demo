@@ -48,7 +48,12 @@
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.49</version>
         </dependency>
 
     </dependencies>
@@ -130,9 +135,9 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>5.2.4</version>
                 <configuration>
-                    <url>jdbc:h2:file:C:\Users\48011\Desktop\temp\crawel-demo\news</url>
+                    <url>jdbc:mysql://localhost/news?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false</url>
                     <user>root</user>
-                    <password>root</password>
+                    <password>123</password>
                 </configuration>
             </plugin>
         </plugins>
