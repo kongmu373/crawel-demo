@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 
-public class MockDataGenerator {
+public class MockMySQLDataGenerator {
     private static void mockData(SqlSessionFactory sqlSessionFactory, int howMany) {
         try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
 
