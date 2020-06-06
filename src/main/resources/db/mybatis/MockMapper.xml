@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.kongmu373.MockMapper">
+    <select id="selectNews" resultType="com.github.kongmu373.pojo.New">
+        select id, url, title, content, created_at, modified_at
+        from NEWS
+        limit 2000
+    </select>
+
+    <insert
+            id="insertNew"
+            parameterType="com.github.kongmu373.pojo.New">
+        insert into NEWS (TITLE, CONTENT, URL, CREATED_AT, MODIFIED_AT)
+        values (#{title}, #{content}, #{url}, #{createdAt}, #{modifiedAt})
+    </insert>
+</mapper>

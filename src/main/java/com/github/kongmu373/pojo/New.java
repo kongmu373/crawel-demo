@@ -1,14 +1,29 @@
 package com.github.kongmu373.pojo;
 
+import java.time.Instant;
+
 public class New {
     private String title;
     private String url;
     private String content;
+    private Instant createdAt;
+    private Instant modifiedAt;
+
+    public New() {
+    }
 
     public New(String title, String url, String content) {
         this.title = title;
         this.url = url;
         this.content = content;
+    }
+
+    public New(New old) {
+        this.title = old.title;
+        this.url = old.url;
+        this.content = old.content;
+        this.createdAt = old.createdAt;
+        this.modifiedAt = old.modifiedAt;
     }
 
     public String getTitle() {
@@ -33,5 +48,21 @@ public class New {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getModifiedAt() {
+        return modifiedAt;
+    }
+
+    public void setModifiedAt(Instant modifiedAt) {
+        this.modifiedAt = modifiedAt;
     }
 }

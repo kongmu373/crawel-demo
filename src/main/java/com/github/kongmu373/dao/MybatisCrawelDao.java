@@ -30,9 +30,9 @@ public class MybatisCrawelDao implements CrawelDao {
     @Override
     public synchronized String getLinkAndDeleteLink() {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
-            String link = session.selectOne("selectTobeProcessedLink");
+            String link = session.selectOne("com.github.kongmu373.MyMapper.selectTobeProcessedLink");
             if (link != null) {
-                session.delete("deleteLinkInTobeProcessed", link);
+                session.delete("com.github.kongmu373.MyMapper.deleteLinkInTobeProcessed", link);
             }
             return link;
         }
@@ -41,7 +41,7 @@ public class MybatisCrawelDao implements CrawelDao {
     @Override
     public boolean isVisitedLinkSearchFromDatabase(String link) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            int count = session.selectOne("countAlreadyProcessedLink", link);
+            int count = session.selectOne("com.github.kongmu373.MyMapper.countAlreadyProcessedLink", link);
             return count > 0;
         }
     }
@@ -49,7 +49,7 @@ public class MybatisCrawelDao implements CrawelDao {
     @Override
     public void insertNewsIntoDatabase(String link, String title, String content) {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
-            session.insert("insertNew", new New(title, link, content));
+            session.insert("com.github.kongmu373.MyMapper.insertNew", new New(title, link, content));
         }
     }
 
@@ -68,7 +68,7 @@ public class MybatisCrawelDao implements CrawelDao {
             Map<String, String> map = new HashMap<>();
             map.put("tablename", tableName);
             map.put("link", link);
-            session.insert("insertLink", map);
+            session.insert("com.github.kongmu373.MyMapper.insertLink", map);
         }
     }
 
